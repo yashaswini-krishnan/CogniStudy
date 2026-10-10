@@ -1,0 +1,115 @@
+{%extends 'base.html'%}
+
+{%block title%}Quiz Results - {{quiz.title}}{%endblock%}
+
+{%block content%}
+<div class="row justify-content-center">
+<div class="col-lg-9 col-xl-8">
+
+<div class="card border-0 shadow-sm text-center p-4 p-md-5 mb-4">
+<h5 class="text-uppercase tracking-wider text-muted fw-bold small mb-2">Quiz Performance</h5>
+<h2 class="fw-bold text-dark mb-4">{{quiz.title}}</h2>
+
+<div class="score-circle mb-3 {%if attempt.score >= 80%}bg-success-subtle text-success border border-success border-2{%elif attempt.score >= 50%}bg-warning-subtle text-warning-emphasis border border-warning border-2{%else%}bg-danger-subtle text-danger border border-danger border-2{%endif%}">
+{{attempt.score}}%
+</div>
+
+<h4 class="fw-bold mb-2">
+{%if attempt.score >= 80%}
+<span class="text-success"><i class="bi bi-trophy-fill me-2"></i>Outstanding Mastery!</span>
+{%elif attempt.score >= 50%}
+<span class="text-primary"><i class="bi bi-hand-thumbs-up-fill me-2"></i>Good Effort!</span>
+{%else%}
+<span class="text-danger"><i class="bi bi-arrow-repeat me-2"></i>Needs Revision!</span>
+{%endif%}
+</h4>
+
+<p class="text-muted mb-4">
+You scored <strong>{{correct_count}}</strong> correct out of <strong>{{total_questions}}</strong> questions on {{attempt.completed_at|date:"F d, Y · H:i"}}.
+</p>
+
+<div class="d-flex justify-content-center gap-3">
+<a href="{%url 'quiz' quiz.id%}" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+<i class="bi bi-arrow-repeat"></i> Retake Quiz
+</a>
+<a href="{%url 'dashboard'%}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+<i class="bi bi-house-door-fill"></i> Back to Dashboard
+</a>
+</div>
+</div>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+<h4 class="fw-bold mb-0">Detailed Question Breakdown</h4>
+<span class="text-muted small">Showing all {{total_questions}} responses</span>
+</div>
+
+{%for answer in answers%}
+<div class="card border-0 shadow-sm mb-3 p-4 border-start border-4 {%if answer.is_correct%}border-success{%else%}border-danger{%endif%}">
+<div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+<div class="d-flex align-items-center gap-2">
+<span class="badge bg-light text-secondary border">Q{{forloop.counter}}</span>
+{%if answer.question.question_type == 'MCQ'%}
+<span class="badge bg-secondary-subtle text-secondary small">MCQ</span>
+{%else%}
+<span class="badge bg-info-subtle text-info-emphasis small">Short Answer</span>
+{%endif%}
+</div>
+{%if answer.is_correct%}
+<span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-semibold border border-success-subtle">
+<i class="bi bi-check-circle-fill me-1"></i> Correct (+1)
+</span>
+{%else%}
+<span class="badge bg-danger-subtle text-danger px-3 py-1 rounded-pill fw-semibold border border-danger-subtle">
+<i class="bi bi-x-circle-fill me-1"></i> Incorrect (0)
+</span>
+{%endif%}
+</div>
+
+<h5 class="fw-bold text-dark mt-2 mb-3 lh-base">{{answer.question.question_text}}</h5>
+
+<div class="bg-light p-3 rounded-3 mb-3">
+<div class="mb-2">
+<span class="text-muted small fw-semibold d-block">Your Submitted Answer:</span>
+<span class="fw-bold {%if answer.is_correct%}text-success{%else%}text-danger{%endif%}">
+{{answer.user_response}}
+</span>
+</div>
+
+{%if not answer.is_correct%}
+<div class="pt-2 border-top">
+<span class="text-muted small fw-semibold d-block">Correct Answer:</span>
+<span class="fw-bold text-success">{{answer.question.correct_answer}}</span>
+</div>
+{%endif%}
+</div>
+
+{%if answer.ai_feedback%}
+<div class="p-3 bg-white border rounded-3 mb-2">
+<div class="d-flex align-items-center gap-2 mb-1">
+<i class="bi bi-stars text-primary"></i>
+<span class="small fw-bold text-primary">AI Evaluation & Explanation:</span>
+</div>
+<p class="mb-0 text-muted small lh-base">{{answer.ai_feedback}}</p>
+</div>
+{%elif answer.question.explanation%}
+<div class="p-3 bg-white border rounded-3 mb-2">
+<div class="d-flex align-items-center gap-2 mb-1">
+<i class="bi bi-info-circle text-secondary"></i>
+<span class="small fw-bold text-secondary">Explanation:</span>
+</div>
+<p class="mb-0 text-muted small lh-base">{{answer.question.explanation}}</p>
+</div>
+{%endif%}
+
+</div>
+{%endfor%}
+
+<div class="text-center my-4">
+<a href="{%url 'dashboard'%}" class="btn btn-outline-secondary px-4">
+<i class="bi bi-arrow-left me-1"></i> Return to Materials Dashboard
+</a>
+</div>
+
+</div>
+</div>
+{%endblock%}

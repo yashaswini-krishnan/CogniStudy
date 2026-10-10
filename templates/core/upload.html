@@ -1,0 +1,136 @@
+{%extends 'base.html'%}
+
+{%block title%}Upload Study Material - Cognistudy{%endblock%}
+
+{%block content%}
+<div class="row justify-content-center">
+<div class="col-lg-8 col-xl-7">
+<div class="d-flex align-items-center justify-content-between mb-4">
+<div>
+<h1 class="h3 fw-bold mb-1">Create New Study Material</h1>
+<p class="text-muted mb-0">Select your source type, provide content, and let Gemini AI summarize & construct quizzes.</p>
+</div>
+<a href="{%url 'dashboard'%}" class="btn btn-outline-secondary btn-sm">
+<i class="bi bi-arrow-left me-1"></i> Back
+</a>
+</div>
+
+<div class="card border-0 shadow-sm p-4 p-md-5">
+<form method="post" enctype="multipart/form-data" id="uploadForm">
+{%csrf_token%}
+
+{%if form.errors%}
+<div class="alert alert-danger mb-4">
+<h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please correct the errors below:</h6>
+<ul class="mb-0 ps-3 small">
+{%for field in form%}
+{%for error in field.errors%}
+<li><strong>{{field.label}}:</strong> {{error}}</li>
+{%endfor%}
+{%endfor%}
+{%for error in form.non_field_errors%}
+<li>{{error}}</li>
+{%endfor%}
+</ul>
+</div>
+{%endif%}
+
+<div class="mb-4">
+<label for="{{form.title.id_for_label}}" class="form-label fw-bold">Material Title <span class="text-danger">*</span></label>
+{{form.title}}
+<div class="form-text">Choose a descriptive title for this subject or lecture.</div>
+</div>
+
+<div class="mb-4">
+<label for="sourceTypeSelect" class="form-label fw-bold">Source Type <span class="text-danger">*</span></label>
+{{form.source_type}}
+<div class="form-text">Select whether you want to paste text, upload a PDF file, or provide a YouTube URL.</div>
+</div>
+
+<div class="mb-4 source-section" id="section-Text">
+<label for="{{form.text_content.id_for_label}}" class="form-label fw-bold">Study Notes or Raw Text <span class="text-danger">*</span></label>
+{{form.text_content}}
+<div class="form-text">Paste textbook excerpts, lecture transcript, revision notes, or study notes.</div>
+</div>
+
+<div class="mb-4 source-section d-none" id="section-PDF">
+<label for="pdfFileInput" class="form-label fw-bold">Upload PDF Document <span class="text-danger">*</span></label>
+<div class="p-4 border border-2 border-dashed rounded-3 text-center bg-light">
+<i class="bi bi-file-earmark-pdf-fill text-danger display-4 mb-2 d-block"></i>
+<p class="mb-2 text-muted fw-semibold">Upload a lecture note, textbook chapter, or research paper</p>
+{{form.pdf_file}}
+<div class="form-text mt-2">Only .pdf files are supported. Text will be automatically extracted using pypdf.</div>
+</div>
+</div>
+
+<div class="mb-4 source-section d-none" id="section-YouTube">
+<label for="youtubeUrlInput" class="form-label fw-bold">YouTube Video URL <span class="text-danger">*</span></label>
+<div class="input-group">
+<span class="input-group-text bg-white"><i class="bi bi-youtube text-danger fs-5"></i></span>
+{{form.youtube_url}}
+</div>
+<div class="form-text">E.g., https://www.youtube.com/watch?v=... or https://youtu.be/... (Subtitles/transcripts must be available).</div>
+</div>
+
+<div class="d-grid gap-2 pt-2">
+<button type="submit" class="btn btn-primary btn-lg shadow-sm py-3" id="submitBtn">
+<i class="bi bi-stars me-2"></i> Generate Summary & Quiz
+</button>
+</div>
+
+<div class="text-center mt-3 d-none" id="loadingIndicator">
+<div class="spinner-border text-primary" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+<p class="text-muted small mt-2 fw-semibold">Extracting content and querying Gemini AI... This may take a few moments.</p>
+</div>
+</form>
+</div>
+</div>
+</div>
+{%endblock%}
+
+{%block scripts%}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const sourceSelect = document.getElementById('sourceTypeSelect');
+    const sections = {
+        'Text': document.getElementById('section-Text'),
+        'PDF': document.getElementById('section-PDF'),
+        'YouTube': document.getElementById('section-YouTube')
+    };
+
+    function updateSectionVisibility() {
+        const selected = sourceSelect.value;
+        Object.keys(sections).forEach(function(type) {
+            if (sections[type]) {
+                if (type === selected) {
+                    sections[type].classList.remove('d-none');
+                } else {
+                    sections[type].classList.add('d-none');
+                }
+            }
+        });
+    }
+
+    if (sourceSelect) {
+        sourceSelect.addEventListener('change', updateSectionVisibility);
+        updateSectionVisibility();
+    }
+
+    const form = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+
+    if (form) {
+        form.addEventListener('submit', function() {
+            if (submitBtn && loadingIndicator) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing Content...';
+                loadingIndicator.classList.remove('d-none');
+            }
+        });
+    }
+});
+</script>
+{%endblock%}
