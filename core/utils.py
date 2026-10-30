@@ -30,32 +30,84 @@ def extract_youtube_video_id(url_or_id: str) -> str | None:
     return None
 
 
+def extract_youtube_transcript_with_gemini(video_url: str) -> str | None:
+    """
+    Fallback extractor using Google Gemini Multimodal Video Understanding.
+    Ingests public YouTube URLs directly through Google's internal pipeline,
+    completely bypassing datacenter IP restrictions and extracting spoken lecture/audio
+    even when manual captions or CC are disabled or blocked on cloud hosts.
+    """
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    try:
+        client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(
+                timeout=45000,
+                retry_options=types.HttpRetryOptions(attempts=1)
+            )
+        )
+        prompt = (
+            "Listen to this YouTube video and provide a comprehensive, detailed written transcript "
+            "of all spoken explanations, lecture notes, concepts, and key dialogue presented in the video. "
+            "Transcribe all core subject matter and explanations verbatim and thoroughly."
+        )
+        part = types.Part.from_uri(file_uri=video_url, mime_type="video/mp4")
+
+        models_to_try = [
+            "gemini-2.5-flash",
+            "gemini-3.5-flash",
+            "gemini-3.8-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+        ]
+
+        for model_name in models_to_try:
+            try:
+                logger.info(f"Attempting native YouTube transcription with Gemini ({model_name})...")
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[part, prompt]
+                )
+                if response.text and len(response.text.strip()) > 40:
+                    logger.info(f"Successfully extracted video transcript via Gemini Multimodal ({model_name}).")
+                    return response.text.strip()
+            except Exception as model_err:
+                logger.warning(f"Gemini YouTube transcription with {model_name} failed: {model_err}")
+                continue
+    except Exception as e:
+        logger.warning(f"Gemini YouTube transcription error: {e}")
+
+    return None
+
+
 def fetch_youtube_transcript(video_url_or_id: str) -> str:
-    """Fetch transcripts for a YouTube video using youtube-transcript-api (supports v0.x and v1.x)."""
+    """
+    Fetch transcripts for a YouTube video.
+    Pipeline:
+    1. Attempts direct fetch with youtube-transcript-api.
+    2. Searches available subtitle tracks (auto-generated, multi-language with translation).
+    3. Seamless fallback: If blocked by YouTube cloud firewall or subtitles are disabled,
+       uses Google Gemini Multimodal Video API to extract the video audio transcript natively!
+    """
     video_id = extract_youtube_video_id(video_url_or_id)
     if not video_id:
         raise ValueError("Invalid YouTube URL or Video ID. Please check the link and try again.")
 
+    canonical_url = f"https://www.youtube.com/watch?v={video_id}"
+
+    # Step 1: Attempt standard youtube-transcript-api extraction
     try:
-        # Check if v1.x instance API is available
         if hasattr(YouTubeTranscriptApi, 'fetch'):
             api = YouTubeTranscriptApi()
             fetched = None
 
-            # 1. Try direct fetch for English variants first
+            # Try English variants first
             try:
                 fetched = api.fetch(video_id, languages=['en', 'en-US', 'en-GB'])
-            except Exception as direct_err:
-                err_type = type(direct_err).__name__
-                if err_type in ('IpBlocked', 'RequestBlocked', 'PoTokenRequired'):
-                    raise ValueError(
-                        "YouTube has restricted automated requests from this cloud server's IP address. "
-                        "Quick workaround: Under the video on YouTube, click '... More' → 'Show transcript', "
-                        "copy the text, and paste it into the 'Text' tab!"
-                    )
-
-            # 2. Fallback: inspect available transcripts (generated, translated, non-English)
-            if not fetched:
+            except Exception:
                 try:
                     transcript_list = api.list(video_id)
                     try:
@@ -68,67 +120,45 @@ def fetch_youtube_transcript(video_url_or_id: str) -> str:
                             except Exception:
                                 pass
                     fetched = transcript.fetch()
-                except Exception as list_err:
-                    err_type = type(list_err).__name__
-                    if err_type in ('IpBlocked', 'RequestBlocked', 'PoTokenRequired'):
-                        raise ValueError(
-                            "YouTube has restricted automated requests from this cloud server's IP address. "
-                            "Quick workaround: Under the video on YouTube, click '... More' → 'Show transcript', "
-                            "copy the text, and paste it into the 'Text' tab!"
-                        )
-                    if err_type in ('TranscriptsDisabled', 'NoTranscriptFound'):
-                        raise ValueError(
-                            "This YouTube video does not have Closed Captions (CC) enabled. "
-                            "Please try a video with CC enabled, or paste the text in the 'Text' tab."
-                        )
-                    raise ValueError(
-                        "Could not find captions for this video. Please ensure Closed Captions (CC) are available on YouTube, "
-                        "or copy the transcript into the 'Text' tab."
-                    )
+                except Exception:
+                    fetched = None
 
-            text_parts = []
-            for item in fetched:
-                if hasattr(item, 'text'):
-                    text_parts.append(item.text)
-                elif isinstance(item, dict):
-                    text_parts.append(item.get('text', ''))
-            full_transcript = " ".join(text_parts).strip()
-            if not full_transcript:
-                raise ValueError("Transcript was found but contains no readable text.")
-            return full_transcript
+            if fetched:
+                text_parts = []
+                for item in fetched:
+                    if hasattr(item, 'text'):
+                        text_parts.append(item.text)
+                    elif isinstance(item, dict):
+                        text_parts.append(item.get('text', ''))
+                full_transcript = " ".join(text_parts).strip()
+                if full_transcript:
+                    logger.info("Successfully fetched transcript via youtube-transcript-api.")
+                    return full_transcript
 
         elif hasattr(YouTubeTranscriptApi, 'get_transcript'):
-            # Legacy v0.x static method fallback
             try:
                 transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
+                text_parts = [item.get('text', '') for item in transcript_data]
+                full_transcript = " ".join(text_parts).strip()
+                if full_transcript:
+                    logger.info("Successfully fetched transcript via youtube-transcript-api.")
+                    return full_transcript
             except Exception:
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-                transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
-                transcript_data = transcript.fetch()
+                pass
+    except Exception as yt_err:
+        logger.warning(f"youtube-transcript-api failed for {video_id}: {yt_err}")
 
-            text_parts = [item.get('text', '') for item in transcript_data]
-            full_transcript = " ".join(text_parts).strip()
-            if not full_transcript:
-                raise ValueError("Transcript was found but contains no readable text.")
-            return full_transcript
+    # Step 2: Fallback to Google Gemini Multimodal Video Understanding
+    logger.info(f"Using Google Gemini native video fallback for YouTube: {canonical_url}")
+    gemini_transcript = extract_youtube_transcript_with_gemini(canonical_url)
+    if gemini_transcript:
+        return gemini_transcript
 
-        else:
-            raise ValueError("Unsupported version of youtube_transcript_api.")
-
-    except Exception as e:
-        if isinstance(e, ValueError):
-            raise
-        logger.warning(f"Error fetching YouTube transcript for {video_id}: {e}")
-        err_type = type(e).__name__
-        if err_type in ('IpBlocked', 'RequestBlocked', 'PoTokenRequired'):
-            raise ValueError(
-                "YouTube has restricted automated requests from this cloud server's IP. "
-                "Quick workaround: Under the video on YouTube, click '... More' → 'Show transcript', "
-                "copy the text, and paste it into the 'Text' tab!"
-            )
-        raise ValueError(
-            "Could not retrieve captions from this YouTube video. Subtitles must be available and public on the video."
-        )
+    # Step 3: If both methods failed
+    raise ValueError(
+        "Could not retrieve content for this YouTube video. Please ensure the video is public, "
+        "or copy the transcript from YouTube ('... More' → 'Show transcript') and paste it into the 'Text' tab!"
+    )
 
 
 def ocr_image_data(image_bytes: bytes, mime_type: str = "image/png") -> str | None:
