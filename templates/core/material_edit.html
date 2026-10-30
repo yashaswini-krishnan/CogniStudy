@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {{ material.title }} - CogniStudy{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9 col-xl-8">
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 small">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'material_detail' material.id %}" class="text-decoration-none">{{ material.title }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 fw-bold text-dark mb-1">Edit Study Material</h1>
+                <p class="text-muted small mb-0">Refine the material title or customize your synthesized study notes.</p>
+            </div>
+            <a href="{% url 'material_detail' material.id %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Cancel
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm p-4 p-md-5 mb-4">
+            <div class="alert alert-info py-2 px-3 small d-flex align-items-center mb-4">
+                <i class="bi bi-info-circle-fill fs-5 me-2 text-info"></i>
+                <span>Editing this material updates your notes directly. <strong>It will not trigger AI re-generation</strong> or affect your existing quiz questions.</span>
+            </div>
+
+            {% if form.errors %}
+                <div class="alert alert-danger mb-4 small">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please correct the following:</h6>
+                    <ul class="mb-0 ps-3">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="id_title" class="form-label fw-bold small text-muted text-uppercase">Material Title <span class="text-danger">*</span></label>
+                    {{ form.title }}
+                    <div class="form-text small">Descriptive title for this topic or lecture.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_summary" class="form-label fw-bold small text-muted text-uppercase">Study Notes & AI Summary <span class="text-danger">*</span></label>
+                    {{ form.summary }}
+                    <div class="form-text small">You can add your own notes, clarify definitions, or highlight key points.</div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                    <a href="{% url 'material_detail' material.id %}" class="btn btn-light px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - CogniStudy{% endblock %}
+
+{% block extra_css %}
+<style>
+.auth-card { border-radius: 1.25rem; }
+.auth-icon-wrap { width: 60px; height: 60px; border-radius: 50%; }
+.input-group .form-control { border-left: none; }
+.input-group-text { border-right: none; background: #f8fafc; }
+.input-group:focus-within .input-group-text,
+.input-group:focus-within .form-control { border-color: #6366f1; box-shadow: none; }
+.input-group:focus-within { box-shadow: 0 0 0 3px rgba(99,102,241,0.12); border-radius: 0.5rem; }
+.btn-pw-toggle { background: #f8fafc; border-left: none; border-color: #dee2e6; color: #94a3b8; cursor: pointer; }
+.btn-pw-toggle:hover { color: #4f46e5; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+  <div class="col-md-7 col-lg-5 col-xl-4">
+    <div class="card auth-card border-0 shadow-sm p-4 p-md-5">
+
+      <div class="text-center mb-4">
+        <div class="auth-icon-wrap d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary mb-3">
+          <i class="bi bi-box-arrow-in-right fs-2"></i>
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-1">Welcome Back</h2>
+        <p class="text-muted small mb-0">Sign in to access your CogniStudy materials.</p>
+      </div>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible py-2 small" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <!-- Username -->
+        <div class="mb-3">
+          <label for="id_username" class="form-label fw-semibold small text-muted">Username</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            {{ form.username }}
+          </div>
+          {% if form.username.errors %}
+            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Password with show/hide toggle -->
+        <div class="mb-4">
+          <label for="id_password" class="form-label fw-semibold small text-muted">Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            {{ form.password }}
+            <button type="button" class="btn btn-pw-toggle border" id="pwToggle" tabindex="-1" aria-label="Toggle password visibility">
+              <i class="bi bi-eye" id="pwEyeIcon"></i>
+            </button>
+          </div>
+          {% if form.password.errors %}
+            <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn btn-primary py-2 fw-semibold">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+          </button>
+        </div>
+      </form>
+
+      <div class="border-top pt-3 text-center">
+        <p class="text-muted small mb-0">
+          Don't have an account?
+          <a href="{% url 'register' %}" class="fw-semibold text-primary text-decoration-none">Sign Up</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var toggle = document.getElementById('pwToggle');
+  var icon = document.getElementById('pwEyeIcon');
+  var pwField = document.getElementById('id_password');
+  if (toggle && pwField) {
+    toggle.addEventListener('click', function () {
+      var isText = pwField.type === 'text';
+      pwField.type = isText ? 'password' : 'text';
+      icon.className = isText ? 'bi bi-eye' : 'bi bi-eye-slash';
+    });
+  }
+});
+</script>
+{% endblock %}

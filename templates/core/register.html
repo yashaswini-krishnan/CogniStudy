@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Account - CogniStudy{% endblock %}
+
+{% block extra_css %}
+<style>
+.auth-card { border-radius: 1.25rem; }
+.auth-icon-wrap { width: 60px; height: 60px; border-radius: 50%; }
+.input-group .form-control { border-left: none; }
+.input-group-text { border-right: none; background: #f8fafc; }
+.input-group:focus-within .input-group-text,
+.input-group:focus-within .form-control { border-color: #6366f1; box-shadow: none; }
+.input-group:focus-within { box-shadow: 0 0 0 3px rgba(99,102,241,0.12); border-radius: 0.5rem; }
+.btn-pw-toggle { background: #f8fafc; border-left: none; border-color: #dee2e6; color: #94a3b8; cursor: pointer; }
+.btn-pw-toggle:hover { color: #4f46e5; }
+.pw-strength-bar { height: 4px; border-radius: 2px; transition: all 0.3s; background: #e2e8f0; overflow: hidden; }
+.pw-strength-fill { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+  <div class="col-md-8 col-lg-6 col-xl-5">
+    <div class="card auth-card border-0 shadow-sm p-4 p-md-5">
+
+      <div class="text-center mb-4">
+        <div class="auth-icon-wrap d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary mb-3">
+          <i class="bi bi-person-plus-fill fs-2"></i>
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-1">Create Your Account</h2>
+        <p class="text-muted small mb-0">Join CogniStudy to turn notes and lectures into interactive study sessions.</p>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 small mb-3 alert-dismissible">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+          <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endif %}
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible py-2 small" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Username -->
+        <div class="mb-3">
+          <label for="id_username" class="form-label fw-semibold small text-muted">Username</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            {{ form.username }}
+          </div>
+          {% if form.username.errors %}
+            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+          {% else %}
+            <div class="form-text small text-muted">{{ form.username.help_text }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Email -->
+        <div class="mb-3">
+          <label for="id_email" class="form-label fw-semibold small text-muted">Email Address</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            {{ form.email }}
+          </div>
+          {% if form.email.errors %}
+            <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Password with toggle + strength meter -->
+        <div class="mb-3">
+          <label for="id_password1" class="form-label fw-semibold small text-muted">Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            {{ form.password1 }}
+            <button type="button" class="btn btn-pw-toggle border" id="pw1Toggle" tabindex="-1" aria-label="Toggle password visibility">
+              <i class="bi bi-eye" id="pw1EyeIcon"></i>
+            </button>
+          </div>
+          <!-- Strength meter -->
+          <div class="pw-strength-bar mt-2">
+            <div class="pw-strength-fill" id="pwStrengthFill" style="width: 0%;"></div>
+          </div>
+          <div class="d-flex justify-content-between mt-1">
+            <span class="text-muted" style="font-size:0.75rem;" id="pwStrengthLabel"></span>
+          </div>
+          {% if form.password1.errors %}
+            <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Confirm password -->
+        <div class="mb-4">
+          <label for="id_password2" class="form-label fw-semibold small text-muted">Confirm Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-shield-check"></i></span>
+            {{ form.password2 }}
+            <button type="button" class="btn btn-pw-toggle border" id="pw2Toggle" tabindex="-1" aria-label="Toggle confirm password visibility">
+              <i class="bi bi-eye" id="pw2EyeIcon"></i>
+            </button>
+          </div>
+          {% if form.password2.errors %}
+            <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn btn-primary py-2 fw-semibold">
+            <i class="bi bi-arrow-right-circle me-1"></i> Create Account
+          </button>
+        </div>
+      </form>
+
+      <div class="border-top pt-3 text-center">
+        <p class="text-muted small mb-0">
+          Already have an account?
+          <a href="{% url 'login' %}" class="fw-semibold text-primary text-decoration-none">Sign In</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  /* Password show/hide toggles */
+  function makeToggle(toggleId, eyeId, fieldId) {
+    var toggle = document.getElementById(toggleId);
+    var icon = document.getElementById(eyeId);
+    var field = document.getElementById(fieldId);
+    if (toggle && field) {
+      toggle.addEventListener('click', function () {
+        var isText = field.type === 'text';
+        field.type = isText ? 'password' : 'text';
+        icon.className = isText ? 'bi bi-eye' : 'bi bi-eye-slash';
+      });
+    }
+  }
+  makeToggle('pw1Toggle', 'pw1EyeIcon', 'id_password1');
+  makeToggle('pw2Toggle', 'pw2EyeIcon', 'id_password2');
+
+  /* Basic password strength meter */
+  var pw1 = document.getElementById('id_password1');
+  var fill = document.getElementById('pwStrengthFill');
+  var label = document.getElementById('pwStrengthLabel');
+  if (pw1 && fill && label) {
+    pw1.addEventListener('input', function () {
+      var val = this.value;
+      var score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      var pct = score * 25;
+      var colors = ['#ef4444', '#f97316', '#eab308', '#10b981'];
+      var labels = ['Weak', 'Fair', 'Good', 'Strong'];
+      fill.style.width = pct + '%';
+      fill.style.background = val.length === 0 ? '#e2e8f0' : colors[score - 1] || '#e2e8f0';
+      label.textContent = val.length === 0 ? '' : (labels[score - 1] || '');
+    });
+  }
+});
+</script>
+{% endblock %}

@@ -51,6 +51,9 @@ staticfiles/
 *.swo
 *~
 
+# Logs (generated at runtime by Django logging config)
+logs/
+
 # Operating System
 .DS_Store
 Thumbs.db

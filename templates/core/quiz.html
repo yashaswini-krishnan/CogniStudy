@@ -1,82 +1,169 @@
 {%extends 'base.html'%}
 
-{%block title%}{{quiz.title}} - Cognistudy{%endblock%}
+{%block title%}{{quiz.title}} - CogniStudy{%endblock%}
+
+{%block extra_css%}
+<style>
+.question-stepper { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.q-step { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; color: #94a3b8; cursor: pointer; text-decoration: none; transition: all 0.15s; background: #fff; }
+.q-step:hover { border-color: #6366f1; color: #4f46e5; }
+.q-step.answered { border-color: #4f46e5; background: #eef2ff; color: #4f46e5; }
+.quiz-progress-bar { height: 6px; border-radius: 3px; background: #e2e8f0; overflow: hidden; }
+.quiz-progress-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #06b6d4); transition: width 0.3s ease; border-radius: 3px; }
+.progress-label { font-size: 0.82rem; font-weight: 600; color: #64748b; }
+</style>
+{%endblock%}
 
 {%block content%}
 <div class="row justify-content-center">
 <div class="col-lg-9 col-xl-8">
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-<div>
-<nav aria-label="breadcrumb">
-<ol class="breadcrumb mb-1 small">
-<li class="breadcrumb-item"><a href="{%url 'dashboard'%}" class="text-decoration-none">Dashboard</a></li>
-<li class="breadcrumb-item active" aria-current="page">Quiz</li>
-</ol>
-</nav>
-<h1 class="h3 fw-bold mb-0">{{quiz.title}}</h1>
-<div class="text-muted small mt-1">
-<span>Source: <strong>{{material.title}}</strong></span>
-<span class="mx-2">&bull;</span>
-<span>{{questions|length}} Questions</span>
-</div>
-</div>
-<a href="{%url 'dashboard'%}" class="btn btn-outline-secondary btn-sm">
-<i class="bi bi-x-lg me-1"></i> Exit Quiz
-</a>
-</div>
 
-<form method="post" id="quizForm">
-{%csrf_token%}
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1 small">
+          <li class="breadcrumb-item"><a href="{%url 'dashboard'%}" class="text-decoration-none">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Quiz</li>
+        </ol>
+      </nav>
+      <h1 class="h3 fw-bold mb-0">{{quiz.title}}</h1>
+      <div class="text-muted small mt-1">
+        <span>Source: <strong>{{material.title}}</strong></span>
+        <span class="mx-2">&bull;</span>
+        <span>{{questions|length}} Question{{questions|length|pluralize}}</span>
+      </div>
+    </div>
+    <a href="{%url 'dashboard'%}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg me-1"></i> Exit Quiz</a>
+  </div>
 
-{%for question in questions%}
-<div class="card border-0 shadow-sm mb-4 p-4">
-<div class="d-flex justify-content-between align-items-center mb-3">
-<div class="d-flex align-items-center gap-2">
-<span class="badge bg-primary rounded-pill px-3 py-2 fw-semibold">Question {{forloop.counter}} of {{questions|length}}</span>
-{%if question.question_type == 'MCQ'%}
-<span class="badge bg-secondary-subtle text-secondary border">Multiple Choice</span>
-{%else%}
-<span class="badge bg-info-subtle text-info-emphasis border">Short Answer</span>
-{%endif%}
-</div>
-</div>
+  <!-- Progress bar -->
+  <div class="card border-0 shadow-sm p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="progress-label">Progress</span>
+      <span class="progress-label" id="progressLabel">0 / {{questions|length}} answered</span>
+    </div>
+    <div class="quiz-progress-bar">
+      <div class="quiz-progress-fill" id="progressFill" style="width: 0%;"></div>
+    </div>
+    <!-- Question stepper pills -->
+    <div class="question-stepper mt-3" id="questionStepper">
+      {%for question in questions%}
+        <a href="#qcard_{{question.id}}" class="q-step" id="qstep_{{question.id}}" title="Question {{forloop.counter}}">{{forloop.counter}}</a>
+      {%endfor%}
+    </div>
+  </div>
 
-<h5 class="fw-bold text-dark mb-4 lh-base">{{question.question_text}}</h5>
+  <!-- Quiz form -->
+  <form method="post" id="quizForm">
+    {%csrf_token%}
 
-{%if question.question_type == 'MCQ'%}
-<div class="d-flex flex-column gap-2">
-{%for option in question.options%}
-<label class="d-block">
-<input type="radio" class="d-none quiz-option-input" name="question_{{question.id}}" value="{{option}}" required>
-<div class="quiz-option-card d-flex align-items-center gap-3">
-<div class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;font-size:0.85rem;font-weight:700;">
-{%if forloop.counter == 1%}A{%elif forloop.counter == 2%}B{%elif forloop.counter == 3%}C{%else%}D{%endif%}
-</div>
-<div class="text-dark fw-medium">{{option}}</div>
-</div>
-</label>
-{%endfor%}
-</div>
+    {%for question in questions%}
+    <div class="card border-0 shadow-sm mb-4 p-4" id="qcard_{{question.id}}">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary rounded-pill px-3 py-2 fw-semibold">Q{{forloop.counter}} of {{questions|length}}</span>
+          {%if question.question_type == 'MCQ'%}
+            <span class="badge bg-secondary-subtle text-secondary border">Multiple Choice</span>
+          {%else%}
+            <span class="badge bg-info-subtle text-info-emphasis border">Short Answer</span>
+          {%endif%}
+        </div>
+        <span class="q-status-icon" id="status_{{question.id}}"></span>
+      </div>
 
-{%else%}
-<div class="mt-2">
-<label for="input_{{question.id}}" class="form-label text-muted small fw-semibold">Your Answer:</label>
-<textarea class="form-control" id="input_{{question.id}}" name="question_{{question.id}}" rows="3" placeholder="Type your answer here in your own words..." required></textarea>
-</div>
-{%endif%}
-</div>
-{%endfor%}
+      <h5 class="fw-bold text-dark mb-4 lh-base">{{question.question_text}}</h5>
 
-<div class="card border-0 shadow-sm p-4 text-center mt-4">
-<p class="text-muted mb-3">Double check your answers before submitting for grading.</p>
-<div>
-<button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm" id="submitQuizBtn">
-<i class="bi bi-send-check-fill me-2"></i> Submit Quiz & View Results
-</button>
-</div>
-</div>
-</form>
+      {%if question.question_type == 'MCQ'%}
+      <div class="d-flex flex-column gap-2">
+        {%for option in question.options%}
+        <label class="d-block">
+          <input type="radio" class="d-none quiz-option-input" name="question_{{question.id}}" value="{{option}}" data-qid="{{question.id}}" required>
+          <div class="quiz-option-card d-flex align-items-center gap-3">
+            <div class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;font-size:0.85rem;font-weight:700;">
+              {%if forloop.counter == 1%}A{%elif forloop.counter == 2%}B{%elif forloop.counter == 3%}C{%else%}D{%endif%}
+            </div>
+            <div class="text-dark fw-medium">{{option}}</div>
+          </div>
+        </label>
+        {%endfor%}
+      </div>
+
+      {%else%}
+      <div class="mt-2">
+        <label for="input_{{question.id}}" class="form-label text-muted small fw-semibold">Your Answer:</label>
+        <textarea class="form-control" id="input_{{question.id}}" name="question_{{question.id}}" rows="3" placeholder="Type your answer in your own words…" data-qid="{{question.id}}" required></textarea>
+      </div>
+      {%endif%}
+    </div>
+    {%endfor%}
+
+    <!-- Submit card -->
+    <div class="card border-0 shadow-sm p-4 text-center mt-4">
+      <p class="text-muted mb-3">Double-check your answers before submitting for AI grading.</p>
+      <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm" id="submitQuizBtn">
+        <i class="bi bi-send-check-fill me-2"></i> Submit Quiz &amp; View Results
+      </button>
+    </div>
+  </form>
 
 </div>
 </div>
+{%endblock%}
+
+{%block scripts%}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var totalQuestions = {{questions|length}};
+  var answered = {};
+
+  function updateProgress() {
+    var count = Object.keys(answered).filter(function (k) { return answered[k]; }).length;
+    var pct = totalQuestions > 0 ? Math.round((count / totalQuestions) * 100) : 0;
+    var fill = document.getElementById('progressFill');
+    var label = document.getElementById('progressLabel');
+    if (fill) fill.style.width = pct + '%';
+    if (label) label.textContent = count + ' / ' + totalQuestions + ' answered';
+  }
+
+  function markAnswered(qid) {
+    answered[qid] = true;
+    var step = document.getElementById('qstep_' + qid);
+    if (step) step.classList.add('answered');
+    updateProgress();
+  }
+
+  /* MCQ radio tracking */
+  document.querySelectorAll('.quiz-option-input').forEach(function (input) {
+    input.addEventListener('change', function () {
+      markAnswered(this.getAttribute('data-qid'));
+    });
+  });
+
+  /* Short answer textarea tracking */
+  document.querySelectorAll('textarea[data-qid]').forEach(function (ta) {
+    ta.addEventListener('input', function () {
+      if (this.value.trim().length > 0) {
+        markAnswered(this.getAttribute('data-qid'));
+      } else {
+        var qid = this.getAttribute('data-qid');
+        answered[qid] = false;
+        var step = document.getElementById('qstep_' + qid);
+        if (step) step.classList.remove('answered');
+        updateProgress();
+      }
+    });
+  });
+
+  /* Submit loading state */
+  var form = document.getElementById('quizForm');
+  var submitBtn = document.getElementById('submitQuizBtn');
+  if (form && submitBtn) {
+    form.addEventListener('submit', function () {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Grading with AI…';
+    });
+  }
+});
+</script>
 {%endblock%}

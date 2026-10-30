@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+
+{% block title %}CogniStudy – AI-Powered Study Companion{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Hero ── */
+.hero-section {
+  background: linear-gradient(135deg, #eef2ff 0%, #f0fdfa 100%);
+  padding: 5rem 0 4rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: #fff; border: 1.5px solid #c7d2fe;
+  color: #4338ca; border-radius: 50rem;
+  font-size: 0.82rem; font-weight: 700;
+  padding: 0.3rem 0.9rem; margin-bottom: 1.5rem;
+}
+.hero-headline {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800; line-height: 1.15;
+  color: #0f172a; letter-spacing: -0.02em;
+}
+.hero-headline span {
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-sub {
+  font-size: 1.1rem; color: #475569; max-width: 560px; line-height: 1.75;
+}
+.hero-cta-group { display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: 2rem; }
+
+/* ── Source chips on hero ── */
+.source-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 0.5rem; padding: 0.45rem 0.85rem;
+  font-size: 0.82rem; font-weight: 600; color: #334155;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* ── Section titles ── */
+.section-eyebrow {
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #4f46e5;
+}
+.section-title { font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 800; color: #0f172a; }
+
+/* ── How it works steps ── */
+.how-step-number {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff; font-weight: 800; font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.how-step-connector {
+  width: 2px; background: #e2e8f0; flex-grow: 1; min-height: 36px; margin-left: 21px;
+}
+
+/* ── Feature cards ── */
+.feature-icon-wrap {
+  width: 52px; height: 52px; border-radius: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: 1rem;
+}
+.feature-card { border-radius: 1rem; transition: transform 0.2s, box-shadow 0.2s; }
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -6px rgba(0,0,0,0.09); }
+
+/* ── Tech stack pills ── */
+.tech-pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.4rem 0.9rem; border-radius: 50rem;
+  font-size: 0.82rem; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #334155;
+}
+
+/* ── CTA Banner ── */
+.cta-banner {
+  background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+  border-radius: 1.5rem; color: #fff;
+}
+.cta-banner h2 { font-weight: 800; }
+.btn-cta-white {
+  background: #fff; color: #4f46e5; font-weight: 700;
+  border-radius: 0.65rem; padding: 0.7rem 1.8rem; border: none;
+  transition: all 0.2s;
+}
+.btn-cta-white:hover { background: #f1f5f9; color: #4338ca; transform: translateY(-1px); }
+.btn-cta-outline {
+  background: transparent; color: #fff; font-weight: 600;
+  border: 2px solid rgba(255,255,255,0.5); border-radius: 0.65rem;
+  padding: 0.7rem 1.8rem; transition: all 0.2s;
+}
+.btn-cta-outline:hover { border-color: #fff; background: rgba(255,255,255,0.1); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ════════════════════════════════════
+     HERO
+════════════════════════════════════ -->
+<section class="hero-section" style="margin: -1.5rem -12px 0; padding-left: 12px; padding-right: 12px;">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <div class="hero-badge">
+          <i class="bi bi-stars"></i> Powered by Google Gemini AI
+        </div>
+        <h1 class="hero-headline mb-3">
+          Turn Any Study Material Into<br><span>Interactive Learning</span>
+        </h1>
+        <p class="hero-sub">
+          Upload a PDF, paste lecture notes, or drop a YouTube URL — CogniStudy extracts the content, generates structured study notes, and builds a personalised quiz in seconds.
+        </p>
+        <div class="hero-cta-group">
+          <a href="{% url 'register' %}" class="btn btn-primary btn-lg px-4 py-2 shadow-sm">
+            <i class="bi bi-person-plus-fill me-2"></i>Get Started Free
+          </a>
+          <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg px-4 py-2">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+          </a>
+        </div>
+        <!-- Accepted sources -->
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <span class="source-chip"><i class="bi bi-file-earmark-pdf text-danger"></i> PDF Documents</span>
+          <span class="source-chip"><i class="bi bi-youtube text-danger"></i> YouTube Videos</span>
+          <span class="source-chip"><i class="bi bi-file-text text-primary"></i> Plain Text / Notes</span>
+        </div>
+      </div>
+
+      <!-- Hero illustration – feature preview card -->
+      <div class="col-lg-6 d-none d-lg-block">
+        <div class="card border-0 shadow p-4" style="border-radius: 1.25rem;">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-stars text-primary fs-5"></i>
+            <span class="fw-bold text-dark">AI Study Notes Preview</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle ms-auto">Generated</span>
+          </div>
+          <div style="font-size: 0.9rem; color: #334155; line-height: 1.7;">
+            <p class="fw-bold text-dark mb-1">### Key Concepts</p>
+            <p class="mb-1">• <strong>Machine Learning</strong> — a subset of AI that enables systems to learn from data.</p>
+            <p class="mb-1">• <strong>Supervised Learning</strong> — training on labelled input-output pairs.</p>
+            <p class="mb-1">• <strong>Neural Networks</strong> — layers of interconnected nodes inspired by the brain.</p>
+            <p class="text-muted small mb-0">…and 12 more concepts extracted from your material.</p>
+          </div>
+          <hr class="my-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="small text-muted"><i class="bi bi-patch-question text-primary me-1"></i>10 quiz questions generated</span>
+            <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Try it free</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     HOW IT WORKS
+════════════════════════════════════ -->
+<section class="py-5 mt-2">
+  <div class="container">
+    <div class="text-center mb-5">
+      <p class="section-eyebrow mb-2">Simple 3-step workflow</p>
+      <h2 class="section-title">How CogniStudy Works</h2>
+      <p class="text-muted mx-auto mt-2" style="max-width: 520px;">No complicated setup. Just bring your content and let the AI do the heavy lifting.</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+      <!-- Step 1 -->
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-4 text-center feature-card">
+          <div class="how-step-number mx-auto mb-3">1</div>
+          <h5 class="fw-bold mb-2">Upload Your Content</h5>
+          <p class="text-muted small">
+            Drop a PDF, paste text directly, or provide a YouTube video link with captions.
+            CogniStudy supports scanned PDFs too — via AI-powered OCR.
+          </p>
+          <div class="mt-auto pt-2 d-flex justify-content-center gap-2 flex-wrap">
+            <span class="badge badge-pdf px-2 py-1 rounded-pill small"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</span>
+            <span class="badge badge-youtube px-2 py-1 rounded-pill small"><i class="bi bi-youtube me-1"></i>YouTube</span>
+            <span class="badge badge-text px-2 py-1 rounded-pill small"><i class="bi bi-file-text me-1"></i>Text</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-4 text-center feature-card" style="border-top: 3px solid #4f46e5;">
+          <div class="how-step-number mx-auto mb-3">2</div>
+          <h5 class="fw-bold mb-2">AI Generates Study Notes</h5>
+          <p class="text-muted small">
+            Google Gemini processes your material and produces structured, readable study notes.
+            Choose short, medium, or detailed depth — tailored to how you revise.
+          </p>
+          <div class="mt-auto pt-2">
+            <span class="badge bg-primary-subtle text-primary border px-2 py-1 small"><i class="bi bi-stars me-1"></i>Gemini AI · 3 depth levels</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-4 text-center feature-card">
+          <div class="how-step-number mx-auto mb-3">3</div>
+          <h5 class="fw-bold mb-2">Test Your Retention</h5>
+          <p class="text-muted small">
+            Take an AI-generated quiz with multiple-choice and short-answer questions.
+            Get instant feedback and track your performance across attempts.
+          </p>
+          <div class="mt-auto pt-2">
+            <span class="badge bg-success-subtle text-success border px-2 py-1 small"><i class="bi bi-patch-check-fill me-1"></i>MCQ + Short Answer + AI grading</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     FEATURES
+════════════════════════════════════ -->
+<section class="py-5 bg-light border-top border-bottom">
+  <div class="container">
+    <div class="text-center mb-5">
+      <p class="section-eyebrow mb-2">What's included</p>
+      <h2 class="section-title">Everything You Need to Study Smarter</h2>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 p-4 feature-card">
+          <div class="feature-icon-wrap bg-primary-subtle text-primary"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+          <h6 class="fw-bold mb-2">PDF Text Extraction</h6>
+          <p class="text-muted small mb-0">Automatically extracts readable text from standard PDFs using pypdf. Scanned pages are processed using Gemini Vision OCR as a fallback.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 p-4 feature-card">
+          <div class="feature-icon-wrap bg-danger-subtle text-danger"><i class="bi bi-youtube"></i></div>
+          <h6 class="fw-bold mb-2">YouTube Transcript Extraction</h6>
+          <p class="text-muted small mb-0">Paste any YouTube URL with available captions. CogniStudy fetches the full transcript and turns it into structured study notes.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 p-4 feature-card">
+          <div class="feature-icon-wrap bg-indigo-subtle" style="background: #eef2ff;"><i class="bi bi-stars text-primary"></i></div>
+          <h6 class="fw-bold mb-2">AI-Powered Summarization</h6>
+          <p class="text-muted small mb-0">Gemini AI processes your content and generates well-structured notes with headings, key concepts, definitions and takeaways.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 p-4 feature-card">
+          <div class="feature-icon-wrap bg-success-subtle text-success"><i class="bi bi-patch-question-fill"></i></div>
+          <h6 class="fw-bold mb-2">AI Quiz Generation</h6>
+          <p class="text-muted small mb-0">Each upload automatically generates a bank of multiple-choice and short-answer questions directly from your study material.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 p-4 feature-card">
+          <div class="feature-icon-wrap bg-warning-subtle text-warning"><i class="bi bi-graph-up-arrow"></i></div>
+          <h6 class="fw-bold mb-2">Performance Tracking</h6>
+          <p class="text-muted small mb-0">Every quiz attempt is logged with a score and timestamp. View your attempt history and see whether you're improving over time.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 p-4 feature-card">
+          <div class="feature-icon-wrap bg-cyan-subtle" style="background: #ecfeff;"><i class="bi bi-person-lock text-info"></i></div>
+          <h6 class="fw-bold mb-2">Secure &amp; Private</h6>
+          <p class="text-muted small mb-0">Every material, summary, and quiz is scoped to your account. Other users can never access or view your data.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     TECH STACK
+════════════════════════════════════ -->
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-4">
+      <p class="section-eyebrow mb-2">Built with</p>
+      <h2 class="section-title">The Technology Behind CogniStudy</h2>
+      <p class="text-muted mt-2 small">A full-stack Django application using real-world technologies you'd find in professional software projects.</p>
+    </div>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+      <span class="tech-pill"><i class="bi bi-gear-fill text-success"></i> Django 5.1</span>
+      <span class="tech-pill"><i class="bi bi-filetype-py text-primary"></i> Python 3.10</span>
+      <span class="tech-pill"><i class="bi bi-stars text-indigo" style="color:#4f46e5"></i> Google Gemini AI</span>
+      <span class="tech-pill"><i class="bi bi-database-fill text-warning"></i> MySQL</span>
+      <span class="tech-pill"><i class="bi bi-bootstrap-fill text-purple" style="color:#7c3aed"></i> Bootstrap 5</span>
+      <span class="tech-pill"><i class="bi bi-file-earmark-pdf text-danger"></i> pypdf + OCR</span>
+      <span class="tech-pill"><i class="bi bi-youtube text-danger"></i> YouTube Transcript API</span>
+      <span class="tech-pill"><i class="bi bi-shield-lock-fill text-success"></i> Django Auth</span>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════
+     CTA BANNER
+════════════════════════════════════ -->
+<section class="pb-5">
+  <div class="container">
+    <div class="cta-banner p-5 text-center">
+      <h2 class="mb-2">Ready to Study Smarter?</h2>
+      <p class="mb-4 opacity-75" style="max-width: 480px; margin: 0 auto;">Create a free account and upload your first study material in under a minute.</p>
+      <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a href="{% url 'register' %}" class="btn btn-cta-white btn-lg px-4">
+          <i class="bi bi-person-plus-fill me-2"></i>Create Free Account
+        </a>
+        <a href="{% url 'login' %}" class="btn btn-cta-outline btn-lg px-4">
+          <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

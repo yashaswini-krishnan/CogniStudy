@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ material.title }} - Study Notes - CogniStudy{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+
+        <!-- Top Navigation & Actions Bar -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 small">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                        <li class="breadcrumb-item active text-truncate" aria-current="page" style="max-width: 280px;">{{ material.title }}</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 fw-bold text-dark mb-1">{{ material.title }}</h1>
+                <div class="d-flex flex-wrap align-items-center gap-2 text-muted small mt-1">
+                    {% if material.source_type == 'PDF' %}
+                        <span class="badge badge-pdf px-2 py-1 rounded-pill"><i class="bi bi-file-earmark-pdf me-1"></i>PDF Document</span>
+                    {% elif material.source_type == 'YouTube' %}
+                        <span class="badge badge-youtube px-2 py-1 rounded-pill"><i class="bi bi-youtube me-1"></i>YouTube Video</span>
+                    {% else %}
+                        <span class="badge badge-text px-2 py-1 rounded-pill"><i class="bi bi-file-text me-1"></i>Raw Text</span>
+                    {% endif %}
+                    <span>&bull;</span>
+                    <span><i class="bi bi-calendar3 me-1"></i>{{ material.created_at|date:"M d, Y" }}</span>
+                    <span>&bull;</span>
+                    <span><i class="bi bi-clock me-1"></i>~{{ reading_time_mins }} min read ({{ word_count }} words)</span>
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a href="{% url 'edit_material' material.id %}" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-pencil-square"></i> Edit Material
+                </a>
+                {% if quiz %}
+                <a href="{% url 'quiz' quiz.id %}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-play-circle-fill"></i> Take Quiz ({{ quiz.questions.count }} Qs)
+                </a>
+                {% endif %}
+                <button type="button" class="btn btn-outline-danger btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" title="Delete material">
+                    <i class="bi bi-trash3"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary & Study Notes Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-stars text-primary fs-5"></i>
+                    <h5 class="fw-bold text-dark mb-0">Study Notes &amp; AI Summary</h5>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="copySummaryBtn" onclick="copySummaryText()">
+                    <i class="bi bi-clipboard me-1" id="copyIcon"></i> <span id="copyText">Copy Notes</span>
+                </button>
+            </div>
+            <div class="card-body p-4">
+                <!-- Rendered markdown; raw text stored in data-raw for copy -->
+                <div class="markdown-body" id="summaryContainer" data-raw="{{ material.summary|escapejs }}" style="font-size: 1.05rem; line-height: 1.8; color: #1e293b;">
+                    <p class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Rendering notes…</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessment Section & Quiz Attempts History -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-patch-question text-primary fs-5"></i>
+                    <h5 class="fw-bold text-dark mb-0">Assessment & Quiz Performance</h5>
+                </div>
+                {% if quiz %}
+                <a href="{% url 'quiz' quiz.id %}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-play-circle-fill"></i> Take Quiz Now
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-4">
+                {% if quiz %}
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 p-3 bg-light rounded-3 border">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">{{ quiz.title }}</h6>
+                            <span class="text-muted small">{{ quiz.questions.count }} practice questions available</span>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+                            {{ attempts|length }} Total Attempt{{ attempts|length|pluralize }}
+                        </span>
+                    </div>
+
+                    {% if attempts %}
+                    <h6 class="fw-bold text-dark mt-4 mb-3 small text-uppercase tracking-wider">Attempt History</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small text-muted">
+                                <tr>
+                                    <th>Attempt Date</th>
+                                    <th>Score</th>
+                                    <th>Performance</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in attempts %}
+                                <tr>
+                                    <td class="small text-muted">
+                                        <i class="bi bi-calendar-event me-1"></i>{{ attempt.completed_at|date:"M d, Y · H:i" }}
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold fs-6">{{ attempt.score }}%</span>
+                                    </td>
+                                    <td>
+                                        {% if attempt.score >= 80 %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                                <i class="bi bi-trophy-fill me-1"></i>Mastery
+                                            </span>
+                                        {% elif attempt.score >= 50 %}
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                                                <i class="bi bi-hand-thumbs-up-fill me-1"></i>Good
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                                <i class="bi bi-arrow-repeat me-1"></i>Revision
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'quiz_result' attempt.id %}" class="btn btn-outline-secondary btn-sm">
+                                            View Results <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 bg-light rounded-3 border">
+                        <i class="bi bi-journal-check text-muted display-6 d-block mb-2"></i>
+                        <p class="text-muted small mb-3">You haven't attempted this assessment quiz yet. Test your retention!</p>
+                        <a href="{% url 'quiz' quiz.id %}" class="btn btn-primary btn-sm px-4">
+                            <i class="bi bi-play-circle me-1"></i> Start First Attempt
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted mb-0">No quiz is currently associated with this study material.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Raw Content Reference (Collapsible Accordion) -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <button class="btn btn-link text-decoration-none text-dark p-0 w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#rawContentCollapse" aria-expanded="false" aria-controls="rawContentCollapse">
+                    <span class="fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-text text-secondary"></i>
+                        Original Extracted Source Content ({{ material.content|length }} characters)
+                    </span>
+                    <i class="bi bi-chevron-down text-muted"></i>
+                </button>
+            </div>
+            <div class="collapse" id="rawContentCollapse">
+                <div class="card-body p-4 bg-light">
+                    <div class="p-3 bg-white rounded border" style="max-height: 350px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; line-height: 1.6; white-space: pre-wrap; color: #334155;">
+{{ material.content }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back to Dashboard Link -->
+        <div class="text-center my-4">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary px-4">
+                <i class="bi bi-arrow-left me-1"></i> Return to Dashboard
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Permanent Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-1 text-muted">Are you sure you want to permanently delete this study material?</p>
+                <p class="fw-semibold text-dark mb-0">{{ material.title }}</p>
+                <p class="text-danger small mt-2 mb-0">This action cannot be undone. All associated quizzes, questions, and attempt records will also be deleted.</p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <form action="{% url 'delete_material' material.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">Yes, Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* Render AI summary as formatted markdown */
+document.addEventListener('DOMContentLoaded', function () {
+    var container = document.getElementById('summaryContainer');
+    if (!container) return;
+    var raw = container.getAttribute('data-raw') || '';
+    if (raw && typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+        container.innerHTML = DOMPurify.sanitize(marked.parse(raw));
+    } else if (raw) {
+        container.style.whiteSpace = 'pre-line';
+        container.textContent = raw;
+    }
+});
+
+function copySummaryText() {
+    var container = document.getElementById('summaryContainer');
+    /* Copy the plain text (innerText strips HTML tags) */
+    var textToCopy = container.getAttribute('data-raw') || container.innerText;
+    navigator.clipboard.writeText(textToCopy).then(function () {
+        var copyIcon = document.getElementById('copyIcon');
+        var copyText = document.getElementById('copyText');
+        copyIcon.className = 'bi bi-check-lg text-success';
+        copyText.innerText = 'Copied!';
+        setTimeout(function () {
+            copyIcon.className = 'bi bi-clipboard';
+            copyText.innerText = 'Copy Notes';
+        }, 2500);
+    }).catch(function (err) {
+        console.error('Could not copy text: ', err);
+    });
+}
+</script>
+{% endblock %}

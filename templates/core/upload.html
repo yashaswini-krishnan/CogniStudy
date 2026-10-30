@@ -1,136 +1,246 @@
 {%extends 'base.html'%}
 
-{%block title%}Upload Study Material - Cognistudy{%endblock%}
+{%block title%}Upload Study Material - CogniStudy{%endblock%}
+
+{%block extra_css%}
+<style>
+/* Upload page specific */
+.source-tab-btn { border-radius: 0.6rem; padding: 0.65rem 1.1rem; font-weight: 600; font-size: 0.88rem; border: 2px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem; }
+.source-tab-btn:hover { border-color: #6366f1; color: #4f46e5; }
+.source-tab-btn.active { border-color: #4f46e5; background: #eef2ff; color: #4f46e5; }
+.source-tab-btn.active i { color: #4f46e5; }
+</style>
+{%endblock%}
 
 {%block content%}
 <div class="row justify-content-center">
 <div class="col-lg-8 col-xl-7">
-<div class="d-flex align-items-center justify-content-between mb-4">
-<div>
-<h1 class="h3 fw-bold mb-1">Create New Study Material</h1>
-<p class="text-muted mb-0">Select your source type, provide content, and let Gemini AI summarize & construct quizzes.</p>
-</div>
-<a href="{%url 'dashboard'%}" class="btn btn-outline-secondary btn-sm">
-<i class="bi bi-arrow-left me-1"></i> Back
-</a>
-</div>
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="h3 fw-bold mb-1">Create New Study Material</h1>
+      <p class="text-muted mb-0">Select your source, provide content, and let Gemini AI summarize &amp; build quizzes.</p>
+    </div>
+    <a href="{%url 'dashboard'%}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Back</a>
+  </div>
 
-<div class="card border-0 shadow-sm p-4 p-md-5">
-<form method="post" enctype="multipart/form-data" id="uploadForm">
-{%csrf_token%}
+  <div class="card border-0 shadow-sm p-4 p-md-5">
+    <form method="post" enctype="multipart/form-data" id="uploadForm">
+      {%csrf_token%}
 
-{%if form.errors%}
-<div class="alert alert-danger mb-4">
-<h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please correct the errors below:</h6>
-<ul class="mb-0 ps-3 small">
-{%for field in form%}
-{%for error in field.errors%}
-<li><strong>{{field.label}}:</strong> {{error}}</li>
-{%endfor%}
-{%endfor%}
-{%for error in form.non_field_errors%}
-<li>{{error}}</li>
-{%endfor%}
-</ul>
-</div>
-{%endif%}
+      {%if form.errors%}
+      <div class="alert alert-danger mb-4">
+        <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please correct the errors below:</h6>
+        <ul class="mb-0 ps-3 small">
+          {%for field in form%}{%for error in field.errors%}<li><strong>{{field.label}}:</strong> {{error}}</li>{%endfor%}{%endfor%}
+          {%for error in form.non_field_errors%}<li>{{error}}</li>{%endfor%}
+        </ul>
+      </div>
+      {%endif%}
 
-<div class="mb-4">
-<label for="{{form.title.id_for_label}}" class="form-label fw-bold">Material Title <span class="text-danger">*</span></label>
-{{form.title}}
-<div class="form-text">Choose a descriptive title for this subject or lecture.</div>
-</div>
+      <!-- Title -->
+      <div class="mb-4">
+        <label for="{{form.title.id_for_label}}" class="form-label fw-bold">Material Title <span class="text-danger">*</span></label>
+        {{form.title}}
+        <div class="form-text">Choose a descriptive title for this subject or lecture.</div>
+      </div>
 
-<div class="mb-4">
-<label for="sourceTypeSelect" class="form-label fw-bold">Source Type <span class="text-danger">*</span></label>
-{{form.source_type}}
-<div class="form-text">Select whether you want to paste text, upload a PDF file, or provide a YouTube URL.</div>
-</div>
+      <!-- Source Type – visual tab buttons -->
+      <div class="mb-4">
+        <label class="form-label fw-bold d-block">Source Type <span class="text-danger">*</span></label>
+        <div class="d-flex flex-wrap gap-2" id="sourceTabGroup">
+          <button type="button" class="source-tab-btn active" data-source="Text"><i class="bi bi-file-text"></i> Text / Notes</button>
+          <button type="button" class="source-tab-btn" data-source="PDF"><i class="bi bi-file-earmark-pdf text-danger"></i> PDF Upload</button>
+          <button type="button" class="source-tab-btn" data-source="YouTube"><i class="bi bi-youtube text-danger"></i> YouTube URL</button>
+        </div>
+        <!-- hidden original select kept for form submission -->
+        <div class="d-none">{{form.source_type}}</div>
+      </div>
 
-<div class="mb-4 source-section" id="section-Text">
-<label for="{{form.text_content.id_for_label}}" class="form-label fw-bold">Study Notes or Raw Text <span class="text-danger">*</span></label>
-{{form.text_content}}
-<div class="form-text">Paste textbook excerpts, lecture transcript, revision notes, or study notes.</div>
-</div>
+      <!-- Summary level -->
+      <div class="mb-4">
+        <label for="summaryLevelSelect" class="form-label fw-bold d-flex justify-content-between align-items-center">
+          <span>Summary Format &amp; Depth</span>
+          <span class="badge bg-primary-subtle text-primary border small">AI Synthesis Depth</span>
+        </label>
+        {{form.summary_level}}
+        <div class="form-text">Choose between a quick 2-minute overview, balanced guide, or exhaustive in-depth notes.</div>
+      </div>
 
-<div class="mb-4 source-section d-none" id="section-PDF">
-<label for="pdfFileInput" class="form-label fw-bold">Upload PDF Document <span class="text-danger">*</span></label>
-<div class="p-4 border border-2 border-dashed rounded-3 text-center bg-light">
-<i class="bi bi-file-earmark-pdf-fill text-danger display-4 mb-2 d-block"></i>
-<p class="mb-2 text-muted fw-semibold">Upload a lecture note, textbook chapter, or research paper</p>
-{{form.pdf_file}}
-<div class="form-text mt-2">Only .pdf files are supported. Text will be automatically extracted using pypdf.</div>
-</div>
-</div>
+      <!-- Text input section -->
+      <div class="mb-4 source-section" id="section-Text">
+        <label for="{{form.text_content.id_for_label}}" class="form-label fw-bold">Study Notes or Raw Text <span class="text-danger">*</span></label>
+        {{form.text_content}}
+        <div class="form-text">Paste textbook excerpts, lecture transcripts, revision notes, or any study material.</div>
+      </div>
 
-<div class="mb-4 source-section d-none" id="section-YouTube">
-<label for="youtubeUrlInput" class="form-label fw-bold">YouTube Video URL <span class="text-danger">*</span></label>
-<div class="input-group">
-<span class="input-group-text bg-white"><i class="bi bi-youtube text-danger fs-5"></i></span>
-{{form.youtube_url}}
-</div>
-<div class="form-text">E.g., https://www.youtube.com/watch?v=... or https://youtu.be/... (Subtitles/transcripts must be available).</div>
-</div>
+      <!-- PDF drag-and-drop section -->
+      <div class="mb-4 source-section d-none" id="section-PDF">
+        <label class="form-label fw-bold">Upload PDF Document <span class="text-danger">*</span></label>
+        <div class="dropzone-container text-center py-5 px-4" id="pdfDropzone" tabindex="0" role="button" aria-label="Click or drag a PDF here">
+          <i class="bi bi-file-earmark-arrow-up text-primary display-4 mb-2 d-block" id="dzIcon"></i>
+          <p class="fw-semibold text-muted mb-1" id="dzTitle">Drag &amp; drop your PDF here</p>
+          <p class="text-muted small mb-3">or <span class="text-primary fw-semibold" style="cursor:pointer;" id="dzBrowse">browse files</span></p>
+          <p class="text-muted small mb-0">Only .pdf files &nbsp;·&nbsp; max 15 MB</p>
+          <div class="d-none">{{form.pdf_file}}</div>
+        </div>
+        <!-- Selected file info bar -->
+        <div class="mt-2 p-2 px-3 rounded-3 border d-flex align-items-center gap-2 bg-white d-none" id="selectedFileInfo">
+          <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+          <span class="small fw-semibold text-dark text-truncate" id="selectedFileName" style="max-width:220px;">—</span>
+          <span class="text-muted small ms-1" id="selectedFileSize"></span>
+          <button type="button" class="btn-close ms-auto" style="font-size:0.7rem;" id="clearFileBtn" aria-label="Remove file"></button>
+        </div>
+      </div>
 
-<div class="d-grid gap-2 pt-2">
-<button type="submit" class="btn btn-primary btn-lg shadow-sm py-3" id="submitBtn">
-<i class="bi bi-stars me-2"></i> Generate Summary & Quiz
-</button>
-</div>
+      <!-- YouTube section -->
+      <div class="mb-4 source-section d-none" id="section-YouTube">
+        <label for="youtubeUrlInput" class="form-label fw-bold">YouTube Video URL <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-youtube text-danger fs-5"></i></span>
+          {{form.youtube_url}}
+        </div>
+        <div class="form-text">e.g. https://www.youtube.com/watch?v=... &nbsp;(Captions/transcripts must be available.)</div>
+      </div>
 
-<div class="text-center mt-3 d-none" id="loadingIndicator">
-<div class="spinner-border text-primary" role="status">
-<span class="visually-hidden">Loading...</span>
-</div>
-<p class="text-muted small mt-2 fw-semibold">Extracting content and querying Gemini AI... This may take a few moments.</p>
-</div>
-</form>
-</div>
+      <!-- Submit -->
+      <div class="d-grid gap-2 pt-2">
+        <button type="submit" class="btn btn-primary btn-lg shadow-sm py-3" id="submitBtn">
+          <i class="bi bi-stars me-2"></i> Generate Summary &amp; Quiz
+        </button>
+      </div>
+
+      <!-- Loading indicator -->
+      <div class="text-center mt-4 d-none" id="loadingIndicator">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
+        <p class="text-muted small mt-2 fw-semibold">Extracting content and querying Gemini AI… This may take a moment.</p>
+      </div>
+    </form>
+  </div>
 </div>
 </div>
 {%endblock%}
 
 {%block scripts%}
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-    const sourceSelect = document.getElementById('sourceTypeSelect');
-    const sections = {
-        'Text': document.getElementById('section-Text'),
-        'PDF': document.getElementById('section-PDF'),
-        'YouTube': document.getElementById('section-YouTube')
-    };
+document.addEventListener('DOMContentLoaded', function () {
+  /* ── Source type visual tabs ── */
+  var sourceSelect = document.getElementById('id_source_type');
+  var tabBtns = document.querySelectorAll('#sourceTabGroup .source-tab-btn');
+  var sections = {
+    'Text': document.getElementById('section-Text'),
+    'PDF': document.getElementById('section-PDF'),
+    'YouTube': document.getElementById('section-YouTube')
+  };
 
-    function updateSectionVisibility() {
-        const selected = sourceSelect.value;
-        Object.keys(sections).forEach(function(type) {
-            if (sections[type]) {
-                if (type === selected) {
-                    sections[type].classList.remove('d-none');
-                } else {
-                    sections[type].classList.add('d-none');
-                }
-            }
-        });
+  function setActiveSource(value) {
+    tabBtns.forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-source') === value);
+    });
+    Object.keys(sections).forEach(function (key) {
+      if (sections[key]) sections[key].classList.toggle('d-none', key !== value);
+    });
+    if (sourceSelect) sourceSelect.value = value;
+  }
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () { setActiveSource(this.getAttribute('data-source')); });
+  });
+
+  /* Initialise to current select value (in case of form re-display after error) */
+  if (sourceSelect && sourceSelect.value) {
+    setActiveSource(sourceSelect.value);
+  } else {
+    setActiveSource('Text');
+  }
+
+  /* ── Drag-and-drop PDF zone ── */
+  var dropzone = document.getElementById('pdfDropzone');
+  var fileInput = document.getElementById('id_pdf_file');
+  var dzBrowse = document.getElementById('dzBrowse');
+  var dzIcon = document.getElementById('dzIcon');
+  var dzTitle = document.getElementById('dzTitle');
+  var fileInfo = document.getElementById('selectedFileInfo');
+  var fileName = document.getElementById('selectedFileName');
+  var fileSize = document.getElementById('selectedFileSize');
+  var clearBtn = document.getElementById('clearFileBtn');
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    var k = 1024;
+    var sizes = ['B', 'KB', 'MB'];
+    var i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  function showFile(file) {
+    if (!file) return;
+    if (fileInfo) {
+      fileInfo.classList.remove('d-none');
+      fileInfo.style.display = 'flex';
     }
+    if (fileName) fileName.textContent = file.name;
+    if (fileSize) fileSize.textContent = formatBytes(file.size);
+    if (dropzone) dropzone.classList.add('has-file');
+    if (dzIcon) { dzIcon.className = 'bi bi-file-earmark-check-fill text-success display-4 mb-2 d-block'; }
+    if (dzTitle) dzTitle.textContent = 'PDF selected';
+  }
 
-    if (sourceSelect) {
-        sourceSelect.addEventListener('change', updateSectionVisibility);
-        updateSectionVisibility();
-    }
+  function clearFile() {
+    if (fileInput) fileInput.value = '';
+    if (fileInfo) { fileInfo.classList.add('d-none'); fileInfo.style.display = ''; }
+    if (dropzone) dropzone.classList.remove('has-file');
+    if (dzIcon) dzIcon.className = 'bi bi-file-earmark-arrow-up text-primary display-4 mb-2 d-block';
+    if (dzTitle) dzTitle.textContent = 'Drag & drop your PDF here';
+  }
 
-    const form = document.getElementById('uploadForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const loadingIndicator = document.getElementById('loadingIndicator');
+  if (dropzone) {
+    dropzone.addEventListener('click', function () { if (fileInput) fileInput.click(); });
+    dropzone.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (fileInput) fileInput.click(); } });
+    dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('dragover'); });
+    dropzone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      var files = e.dataTransfer.files;
+      if (files.length > 0 && fileInput) {
+        try { fileInput.files = files; } catch (ex) { /* fallback: DataTransfer not settable in some browsers */ }
+        showFile(files[0]);
+      }
+    });
+  }
 
-    if (form) {
-        form.addEventListener('submit', function() {
-            if (submitBtn && loadingIndicator) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing Content...';
-                loadingIndicator.classList.remove('d-none');
-            }
-        });
-    }
+  if (dzBrowse) {
+    dzBrowse.addEventListener('click', function (e) { e.stopPropagation(); if (fileInput) fileInput.click(); });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', function () {
+      if (this.files && this.files.length > 0) {
+        showFile(this.files[0]);
+      } else {
+        clearFile();
+      }
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function (e) { e.stopPropagation(); clearFile(); });
+  }
+
+  /* ── Loading state on submit ── */
+  var form = document.getElementById('uploadForm');
+  var submitBtn = document.getElementById('submitBtn');
+  var loadingIndicator = document.getElementById('loadingIndicator');
+
+  if (form) {
+    form.addEventListener('submit', function () {
+      if (submitBtn && loadingIndicator) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing Content…';
+        loadingIndicator.classList.remove('d-none');
+      }
+    });
+  }
 });
 </script>
 {%endblock%}
