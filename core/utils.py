@@ -401,10 +401,11 @@ Return ONLY a valid JSON object with the following exact structure:
 }}
 
 Requirements:
-1. Preserve all important technical terminology, formulas, and domain keywords.
-2. Base all questions and summary strictly on the provided content. Do not invent details not supported by the source.
-3. Generate 4 to 6 challenging Multiple Choice Questions (MCQs) covering key ideas across the material. Each MCQ must have exactly 4 options, and 'correct_answer' must exactly match one of the items in 'options'.
-4. Generate 2 to 4 Short Answer Questions testing deeper conceptual understanding.
+1. Explain concepts in clear, intuitive, student-friendly language while preserving essential key terms.
+2. For chemical/math equations, write clean readable text with Unicode characters (e.g. 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂, ATP, NADPH) rather than computer-code style LaTeX commands.
+3. Base all questions and summary strictly on the provided content. Do not invent details not supported by the source.
+4. Generate 4 to 6 challenging Multiple Choice Questions (MCQs) covering key ideas across the material. Each MCQ must have exactly 4 options, and 'correct_answer' must exactly match one of the items in 'options'.
+5. Generate 2 to 4 Short Answer Questions testing deeper conceptual understanding.
 
 Study Material Title: {title}
 Content:

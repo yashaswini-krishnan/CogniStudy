@@ -229,6 +229,15 @@ document.addEventListener('DOMContentLoaded', function () {
     var raw = getSummaryText();
     if (raw && typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
         container.innerHTML = DOMPurify.sanitize(marked.parse(raw));
+        if (typeof renderMathInElement !== 'undefined') {
+            renderMathInElement(container, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false
+            });
+        }
     } else if (raw) {
         container.style.whiteSpace = 'pre-line';
         container.textContent = raw;
