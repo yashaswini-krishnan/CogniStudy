@@ -3,7 +3,7 @@ services:
     name: cognistudy
     runtime: python
     buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: gunicorn cognistudy_project.wsgi:application
+    startCommand: gunicorn cognistudy_project.wsgi:application --timeout 120
     plan: free
     envVars:
       - key: PYTHON_VERSION
