@@ -40,17 +40,51 @@ def fetch_youtube_transcript(video_url_or_id: str) -> str:
         # Check if v1.x instance API is available
         if hasattr(YouTubeTranscriptApi, 'fetch'):
             api = YouTubeTranscriptApi()
+            fetched = None
+
+            # 1. Try direct fetch for English variants first
             try:
-                # Try preferred English transcript variants first
                 fetched = api.fetch(video_id, languages=['en', 'en-US', 'en-GB'])
-            except Exception:
+            except Exception as direct_err:
+                err_type = type(direct_err).__name__
+                if err_type in ('IpBlocked', 'RequestBlocked', 'PoTokenRequired'):
+                    raise ValueError(
+                        "YouTube has restricted automated requests from this cloud server's IP address. "
+                        "Quick workaround: Under the video on YouTube, click '... More' → 'Show transcript', "
+                        "copy the text, and paste it into the 'Text' tab!"
+                    )
+
+            # 2. Fallback: inspect available transcripts (generated, translated, non-English)
+            if not fetched:
                 try:
-                    # Fallback: check available transcripts list and take the first one
                     transcript_list = api.list(video_id)
-                    first_transcript = next(iter(transcript_list))
-                    fetched = first_transcript.fetch()
+                    try:
+                        transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
+                    except Exception:
+                        transcript = next(iter(transcript_list))
+                        if transcript.is_translatable:
+                            try:
+                                transcript = transcript.translate('en')
+                            except Exception:
+                                pass
+                    fetched = transcript.fetch()
                 except Exception as list_err:
-                    raise ValueError("Could not find captions/subtitles for this YouTube video. Please ensure the video has subtitles enabled.")
+                    err_type = type(list_err).__name__
+                    if err_type in ('IpBlocked', 'RequestBlocked', 'PoTokenRequired'):
+                        raise ValueError(
+                            "YouTube has restricted automated requests from this cloud server's IP address. "
+                            "Quick workaround: Under the video on YouTube, click '... More' → 'Show transcript', "
+                            "copy the text, and paste it into the 'Text' tab!"
+                        )
+                    if err_type in ('TranscriptsDisabled', 'NoTranscriptFound'):
+                        raise ValueError(
+                            "This YouTube video does not have Closed Captions (CC) enabled. "
+                            "Please try a video with CC enabled, or paste the text in the 'Text' tab."
+                        )
+                    raise ValueError(
+                        "Could not find captions for this video. Please ensure Closed Captions (CC) are available on YouTube, "
+                        "or copy the transcript into the 'Text' tab."
+                    )
 
             text_parts = []
             for item in fetched:
@@ -85,7 +119,16 @@ def fetch_youtube_transcript(video_url_or_id: str) -> str:
         if isinstance(e, ValueError):
             raise
         logger.warning(f"Error fetching YouTube transcript for {video_id}: {e}")
-        raise ValueError("Could not retrieve captions from this YouTube video. Subtitles must be available and public on the video.")
+        err_type = type(e).__name__
+        if err_type in ('IpBlocked', 'RequestBlocked', 'PoTokenRequired'):
+            raise ValueError(
+                "YouTube has restricted automated requests from this cloud server's IP. "
+                "Quick workaround: Under the video on YouTube, click '... More' → 'Show transcript', "
+                "copy the text, and paste it into the 'Text' tab!"
+            )
+        raise ValueError(
+            "Could not retrieve captions from this YouTube video. Subtitles must be available and public on the video."
+        )
 
 
 def ocr_image_data(image_bytes: bytes, mime_type: str = "image/png") -> str | None:
