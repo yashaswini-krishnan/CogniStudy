@@ -40,6 +40,26 @@ DEBUG = os.getenv('DEBUG', 'False').strip().lower() == 'true'
 _allowed_raw = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost')
 ALLOWED_HOSTS = [h.strip() for h in _allowed_raw.split(',') if h.strip()]
 
+# Render automatically injects RENDER_EXTERNAL_HOSTNAME into web services
+_render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
+
+# ─────────────────────────────────────────────────────────────
+# CSRF trusted origins for HTTPS deployments (Render, Railway, etc.)
+# ─────────────────────────────────────────────────────────────
+_csrf_raw = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if _csrf_raw:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_raw.split(',') if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{h}" for h in ALLOWED_HOSTS if h not in ('127.0.0.1', 'localhost', '*')
+    ]
+if _render_host:
+    _render_origin = f"https://{_render_host}"
+    if _render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_render_origin)
+
 # ─────────────────────────────────────────────────────────────
 # Installed applications
 # ─────────────────────────────────────────────────────────────
@@ -105,6 +125,18 @@ DATABASES = {
         'CONN_MAX_AGE': 60,  # reuse DB connections for up to 60 seconds
     }
 }
+
+# Support DATABASE_URL if injected by platforms like Render or Railway
+_database_url = os.getenv('DATABASE_URL')
+if _database_url:
+    try:
+        import dj_database_url
+        DATABASES['default'] = dj_database_url.config(
+            default=_database_url,
+            conn_max_age=60,
+        )
+    except ImportError:
+        pass
 
 # ─────────────────────────────────────────────────────────────
 # Password validation
@@ -195,7 +227,12 @@ if not DEBUG:
 # Logging — structured, levelled, file + console output
 # ─────────────────────────────────────────────────────────────
 LOGS_DIR = BASE_DIR / 'logs'
-LOGS_DIR.mkdir(exist_ok=True)
+_has_logs_dir = False
+try:
+    LOGS_DIR.mkdir(exist_ok=True)
+    _has_logs_dir = True
+except OSError:
+    _has_logs_dir = False
 
 LOGGING = {
     'version': 1,
@@ -218,23 +255,28 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
-        'file_app': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'cognistudy_app.log',
-            'maxBytes': 5 * 1024 * 1024,   # 5 MB per file
-            'backupCount': 3,
-            'formatter': 'verbose',
-            'encoding': 'utf-8',
-        },
-        'file_errors': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'cognistudy_errors.log',
-            'maxBytes': 5 * 1024 * 1024,
-            'backupCount': 3,
-            'formatter': 'verbose',
-            'level': 'ERROR',
-            'encoding': 'utf-8',
-        },
+        **({
+            'file_app': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': LOGS_DIR / 'cognistudy_app.log',
+                'maxBytes': 5 * 1024 * 1024,   # 5 MB per file
+                'backupCount': 3,
+                'formatter': 'verbose',
+                'encoding': 'utf-8',
+            },
+            'file_errors': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': LOGS_DIR / 'cognistudy_errors.log',
+                'maxBytes': 5 * 1024 * 1024,
+                'backupCount': 3,
+                'formatter': 'verbose',
+                'level': 'ERROR',
+                'encoding': 'utf-8',
+            },
+        } if _has_logs_dir else {
+            'file_app': {'class': 'logging.NullHandler'},
+            'file_errors': {'class': 'logging.NullHandler'},
+        }),
     },
 
     'loggers': {

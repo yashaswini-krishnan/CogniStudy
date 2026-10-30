@@ -27,6 +27,13 @@ youtube-transcript-api==1.2.4
 # Static file serving in production
 whitenoise==6.12.0
 
+# WSGI HTTP Server for production (Render / Railway / VPS)
+gunicorn>=23.0.0
+
+# Database adapters for production (supports DATABASE_URL on Render/Railway)
+dj-database-url>=2.2.0
+psycopg2-binary>=2.9.9
+
 # ─── Development / Testing only ──────────────────────────────
 # reportlab is used only in tests to generate synthetic PDFs.
 # It is not required in production; comment out if deploying.

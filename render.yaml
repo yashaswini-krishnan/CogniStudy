@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: cognistudy
+    runtime: python
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: gunicorn cognistudy_project.wsgi:application
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cognistudy-db
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+
+databases:
+  - name: cognistudy-db
+    databaseName: cognistudy_db
+    user: cognistudy_user
+    plan: free
