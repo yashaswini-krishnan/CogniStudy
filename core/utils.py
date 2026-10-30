@@ -31,28 +31,61 @@ def extract_youtube_video_id(url_or_id: str) -> str | None:
 
 
 def fetch_youtube_transcript(video_url_or_id: str) -> str:
-    """Fetch transcripts for a YouTube video using youtube-transcript-api."""
+    """Fetch transcripts for a YouTube video using youtube-transcript-api (supports v0.x and v1.x)."""
     video_id = extract_youtube_video_id(video_url_or_id)
     if not video_id:
-        raise ValueError("Invalid YouTube URL or Video ID. Please check the link.")
-    
+        raise ValueError("Invalid YouTube URL or Video ID. Please check the link and try again.")
+
     try:
-        # First try direct get_transcript
-        transcript_data = YouTubeTranscriptApi.get_transcript(video_id)
-        text_parts = [item.get('text', '') for item in transcript_data]
-        full_transcript = " ".join(text_parts).strip()
-        if not full_transcript:
-            raise ValueError("Transcript was found but contains no readable text.")
-        return full_transcript
+        # Check if v1.x instance API is available
+        if hasattr(YouTubeTranscriptApi, 'fetch'):
+            api = YouTubeTranscriptApi()
+            try:
+                # Try preferred English transcript variants first
+                fetched = api.fetch(video_id, languages=['en', 'en-US', 'en-GB'])
+            except Exception:
+                try:
+                    # Fallback: check available transcripts list and take the first one
+                    transcript_list = api.list(video_id)
+                    first_transcript = next(iter(transcript_list))
+                    fetched = first_transcript.fetch()
+                except Exception as list_err:
+                    raise ValueError("Could not find captions/subtitles for this YouTube video. Please ensure the video has subtitles enabled.")
+
+            text_parts = []
+            for item in fetched:
+                if hasattr(item, 'text'):
+                    text_parts.append(item.text)
+                elif isinstance(item, dict):
+                    text_parts.append(item.get('text', ''))
+            full_transcript = " ".join(text_parts).strip()
+            if not full_transcript:
+                raise ValueError("Transcript was found but contains no readable text.")
+            return full_transcript
+
+        elif hasattr(YouTubeTranscriptApi, 'get_transcript'):
+            # Legacy v0.x static method fallback
+            try:
+                transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
+            except Exception:
+                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
+                transcript_data = transcript.fetch()
+
+            text_parts = [item.get('text', '') for item in transcript_data]
+            full_transcript = " ".join(text_parts).strip()
+            if not full_transcript:
+                raise ValueError("Transcript was found but contains no readable text.")
+            return full_transcript
+
+        else:
+            raise ValueError("Unsupported version of youtube_transcript_api.")
+
     except Exception as e:
-        # Try listing transcripts to get available language if english is not default
-        try:
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-            transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
-            data = transcript.fetch()
-            return " ".join([item.get('text', '') for item in data]).strip()
-        except Exception:
-            raise ValueError(f"Could not retrieve YouTube transcript: {str(e)}")
+        if isinstance(e, ValueError):
+            raise
+        logger.warning(f"Error fetching YouTube transcript for {video_id}: {e}")
+        raise ValueError("Could not retrieve captions from this YouTube video. Subtitles must be available and public on the video.")
 
 
 def ocr_image_data(image_bytes: bytes, mime_type: str = "image/png") -> str | None:

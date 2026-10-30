@@ -185,9 +185,12 @@ def upload_view(request):
                 messages.success(request, f"Successfully processed '{title}'! Quiz generated with {quiz.questions.count()} questions.")
                 return redirect('dashboard')
 
+            except ValueError as ve:
+                logger.warning(f"Validation/extraction error during upload: {ve}")
+                messages.error(request, str(ve))
+                return render(request, 'core/upload.html', {'form': form})
             except Exception as e:
                 logger.exception("Error processing study material upload:")
-                # Sanitize error message to avoid exposing internal server stack traces or keys
                 messages.error(request, "We encountered an issue processing your study material. Please verify your document or URL and try again.")
                 return render(request, 'core/upload.html', {'form': form})
     else:
