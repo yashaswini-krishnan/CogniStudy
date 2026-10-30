@@ -124,7 +124,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   /* ── Source type visual tabs ── */
-  var sourceSelect = document.getElementById('id_source_type');
+  /* forms.py sets id="sourceTypeSelect" on the <select> widget */
+  var sourceSelect = document.getElementById('sourceTypeSelect');
   var tabBtns = document.querySelectorAll('#sourceTabGroup .source-tab-btn');
   var sections = {
     'Text': document.getElementById('section-Text'),
@@ -155,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /* ── Drag-and-drop PDF zone ── */
   var dropzone = document.getElementById('pdfDropzone');
-  var fileInput = document.getElementById('id_pdf_file');
+  var fileInput = document.getElementById('pdfFileInput');   /* id set in forms.py widget attrs */
   var dzBrowse = document.getElementById('dzBrowse');
   var dzIcon = document.getElementById('dzIcon');
   var dzTitle = document.getElementById('dzTitle');

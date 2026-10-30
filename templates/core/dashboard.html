@@ -79,7 +79,10 @@
             <span class="text-muted small fw-semibold text-uppercase">AI Summary</span>
             <span class="badge bg-light text-secondary border small"><i class="bi bi-stars text-primary me-1"></i>AI Generated</span>
           </div>
-          <div class="summary-scroll-box markdown-body summary-card-md" data-raw="{{material.summary|truncatechars:500|escapejs}}"></div>
+          <div class="summary-scroll-box markdown-body summary-card-md">
+            <textarea class="d-none raw-summary-content">{{material.summary|truncatechars:400}}</textarea>
+            <div class="summary-rendered"></div>
+          </div>
         </div>
 
         <!-- Actions footer -->
@@ -186,11 +189,13 @@
 document.addEventListener('DOMContentLoaded', function () {
   /* ── Render markdown snippets on dashboard cards ── */
   document.querySelectorAll('.summary-card-md').forEach(function (el) {
-    var raw = el.getAttribute('data-raw') || '';
+    var rawTextarea = el.querySelector('.raw-summary-content');
+    var targetDiv = el.querySelector('.summary-rendered') || el;
+    var raw = rawTextarea ? rawTextarea.value : '';
     if (raw && typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
-      el.innerHTML = DOMPurify.sanitize(marked.parse(raw));
+      targetDiv.innerHTML = DOMPurify.sanitize(marked.parse(raw));
     } else {
-      el.textContent = raw;
+      targetDiv.textContent = raw;
     }
   });
 

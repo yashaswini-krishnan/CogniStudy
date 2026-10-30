@@ -58,9 +58,12 @@
                 </button>
             </div>
             <div class="card-body p-4">
-                <!-- Rendered markdown; raw text stored in data-raw for copy -->
-                <div class="markdown-body" id="summaryContainer" data-raw="{{ material.summary|escapejs }}" style="font-size: 1.05rem; line-height: 1.8; color: #1e293b;">
-                    <p class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Rendering notes…</p>
+                <!-- Raw markdown content preserved in hidden textarea to avoid escapejs string corruption -->
+                <textarea class="d-none" id="rawSummaryContent">{{ material.summary }}</textarea>
+                <div class="markdown-body" id="summaryContainer" style="font-size: 1.05rem; line-height: 1.8; color: #1e293b;">
+                    <noscript>
+                        <div style="white-space: pre-line;">{{ material.summary }}</div>
+                    </noscript>
                 </div>
             </div>
         </div>
@@ -210,11 +213,20 @@
 
 {% block scripts %}
 <script>
+/* Helper to safely retrieve raw summary text */
+function getSummaryText() {
+    var rawTextarea = document.getElementById('rawSummaryContent');
+    if (rawTextarea && typeof rawTextarea.value === 'string') {
+        return rawTextarea.value;
+    }
+    return '';
+}
+
 /* Render AI summary as formatted markdown */
 document.addEventListener('DOMContentLoaded', function () {
     var container = document.getElementById('summaryContainer');
     if (!container) return;
-    var raw = container.getAttribute('data-raw') || '';
+    var raw = getSummaryText();
     if (raw && typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
         container.innerHTML = DOMPurify.sanitize(marked.parse(raw));
     } else if (raw) {
@@ -224,9 +236,11 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function copySummaryText() {
-    var container = document.getElementById('summaryContainer');
-    /* Copy the plain text (innerText strips HTML tags) */
-    var textToCopy = container.getAttribute('data-raw') || container.innerText;
+    var textToCopy = getSummaryText();
+    if (!textToCopy) {
+        var container = document.getElementById('summaryContainer');
+        textToCopy = container ? container.innerText : '';
+    }
     navigator.clipboard.writeText(textToCopy).then(function () {
         var copyIcon = document.getElementById('copyIcon');
         var copyText = document.getElementById('copyText');

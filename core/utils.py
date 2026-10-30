@@ -80,9 +80,15 @@ def ocr_image_data(image_bytes: bytes, mime_type: str = "image/png") -> str | No
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if api_key:
         try:
-            client = genai.Client(api_key=api_key)
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(
+                    timeout=12000,
+                    retry_options=types.HttpRetryOptions(attempts=1)
+                )
+            )
             part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
-            for model_name in ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest"]:
+            for model_name in ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]:
                 try:
                     response = client.models.generate_content(
                         model=model_name,
@@ -408,13 +414,19 @@ Content:
 """
 
     models_to_try = [
-        "gemini-3.8-flash",
-        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
         "gemini-3.5-flash",
-        "gemini-flash-latest",
+        "gemini-3.6-flash",
+        "gemini-3.8-flash",
     ]
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(
+            timeout=18000,
+            retry_options=types.HttpRetryOptions(attempts=1)
+        )
+    )
     last_error = None
 
     for model_name in models_to_try:
